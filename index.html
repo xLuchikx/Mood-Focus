@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood & Focus Journal</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="stylesheet" href="styles.css">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW failed', err));
+            });
+        }
+    </script>
+</head>
+<body>
+
+<header>
+    <div class="logo">🧠 Mood & Focus</div>
+    <div style="display:flex; gap:10px;">
+        <button onclick="openSettingsModal()" style="background:none; border:1px solid #ccc; padding:8px 12px; border-radius:6px; cursor:pointer;">⚙️ Настройки</button>
+        <button onclick="openReportModal()" style="background:none; border:1px solid #ccc; padding:8px 12px; border-radius:6px; cursor:pointer;">📊 Статистика</button>
+    </div>
+</header>
+
+<div class="container">
+    
+    <!-- КАРТОЧКА ВВОДА -->
+    <div class="card">
+        <h2>Как твое состояние сейчас?</h2>
+        
+        <div class="mood-selector" id="moodContainer">
+            <div class="mood-btn" data-val="1" onclick="selectMood(1)">😭<span>Ужасно</span></div>
+            <div class="mood-btn" data-val="2" onclick="selectMood(2)">😕<span>Плохо</span></div>
+            <div class="mood-btn active" data-val="3" onclick="selectMood(3)">😐<span>Нормально</span></div>
+            <div class="mood-btn" data-val="4" onclick="selectMood(4)">🙂<span>Хорошо</span></div>
+            <div class="mood-btn" data-val="5" onclick="selectMood(5)">🤩<span>Отлично</span></div>
+        </div>
+
+        <div class="proc-row">
+            <div class="proc-label">
+                ⚠️ Я сейчас прокрастинирую
+            </div>
+            <label class="switch">
+                <input type="checkbox" id="procToggle">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <textarea id="noteInput" class="note-input" placeholder="Опиши причину (почему ты не работаешь? или почему тебе хорошо?)..."></textarea>
+        
+        <button class="btn-save" onclick="saveEntry()">Записать состояние</button>
+    </div>
+
+    <!-- ИСТОРИЯ -->
+    <div class="card">
+        <h2>Недавние записи</h2>
+        <div class="history-list" id="historyList">
+            <!-- Заполняется через JS -->
+        </div>
+    </div>
+
+</div>
+
+<!-- Тост-уведомление -->
+<div class="toast" id="toast"></div>
+
+<!-- Report Modal -->
+<div class="modal-overlay" id="reportModal" style="display:none;">
+    <div class="modal-content modal-large">
+        <div class="report-header">
+            <div class="report-nav">
+                <h2 style="margin:0;">📊 Статистика</h2>
+                <div id="report-breadcrumb" class="breadcrumb"></div>
+            </div>
+            <div class="report-filters">
+                <div class="mode-toggle">
+                    <button class="m-btn active" onclick="report.setDisplayMode('mood')" id="mode-mood">Настроение</button>
+                    <button class="m-btn" onclick="report.setDisplayMode('count')" id="mode-count">Кол-во</button>
+                </div>
+                <select class="custom-select" id="report-period-select" onchange="report.setPeriod(this.value)">
+                    <option value="today">Сегодня</option>
+                    <option value="yesterday">Вчера</option>
+                    <option value="week">Эта неделя</option>
+                    <option value="last_week">Прошлая неделя</option>
+                    <option value="month">Этот месяц</option>
+                    <option value="last_month">Прошлый месяц</option>
+                    <option value="year" selected>Этот год</option>
+                    <option value="365">Последние 365 дней</option>
+                </select>
+                <button class="btn-secondary" onclick="report.exportCSV()" title="Экспорт CSV">📥</button>
+                <button class="btn-secondary" onclick="document.getElementById('import-csv-input').click()" title="Импорт CSV">📤</button>
+                <input type="file" id="import-csv-input" accept=".csv" style="display:none" onchange="report.importCSV(event)" />
+            </div>
+        </div>
+
+        <div id="reportContent"></div>
+
+        <div class="modal-actions" style="margin-top: 20px;">
+            <button class="btn-secondary" onclick="closeReportModal()">Закрыть</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно Настроек -->
+<div class="modal-overlay" id="settingsModal" style="display:none; z-index:9100;">
+    <div class="modal-content" style="max-width: 400px;">
+        <h2 style="margin-top:0;">Настройки</h2>
+        <div style="margin: 20px 0;">
+            <label style="display:flex; align-items:center; gap:10px; font-weight:bold; cursor:pointer; margin-bottom:15px;">
+                <input type="checkbox" id="notifToggle" style="transform:scale(1.5);" onchange="toggleNotifSettings()">
+                Присылать уведомления
+            </label>
+            
+            <div id="notifSettings" style="opacity:0.5; pointer-events:none; transition:all 0.3s; padding-left:30px;">
+                <label style="display:block; margin-bottom:8px; font-size:14px;">Как часто спрашивать о настроении?</label>
+                <select id="notifInterval" class="custom-select" style="width:100%;">
+                    <option value="1">Каждую 1 минуту (тест)</option>
+                    <option value="30">Каждые 30 минут</option>
+                    <option value="60">Каждый 1 час</option>
+                    <option value="120">Каждые 2 часа</option>
+                    <option value="240">Каждые 4 часа</option>
+                    <option value="480">Каждые 8 часов</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="modal-actions" style="margin-top: 30px;">
+            <button class="btn-secondary" onclick="closeSettingsModal()">Отмена</button>
+            <button class="btn-save" onclick="saveSettings()" style="width:auto; margin:0;">Сохранить</button>
+        </div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
