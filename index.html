@@ -20,6 +20,7 @@
 <header>
     <div class="logo">🧠 Mood & Focus</div>
     <div style="display:flex; gap:10px;">
+        <button onclick="testNotification()" style="background:#5DADE2; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold;">🔔 Тест</button>
         <button onclick="openSettingsModal()" style="background:none; border:1px solid #ccc; padding:8px 12px; border-radius:6px; cursor:pointer;">⚙️ Настройки</button>
         <button onclick="openReportModal()" style="background:none; border:1px solid #ccc; padding:8px 12px; border-radius:6px; cursor:pointer;">📊 Статистика</button>
     </div>
@@ -31,22 +32,36 @@
     <div class="card">
         <h2>Как твое состояние сейчас?</h2>
         
-        <div class="mood-selector" id="moodContainer">
-            <div class="mood-btn" data-val="1" onclick="selectMood(1)">😭<span>Ужасно</span></div>
-            <div class="mood-btn" data-val="2" onclick="selectMood(2)">😕<span>Плохо</span></div>
-            <div class="mood-btn active" data-val="3" onclick="selectMood(3)">😐<span>Нормально</span></div>
-            <div class="mood-btn" data-val="4" onclick="selectMood(4)">🙂<span>Хорошо</span></div>
-            <div class="mood-btn" data-val="5" onclick="selectMood(5)">🤩<span>Отлично</span></div>
+        <div class="form-group">
+            <label class="section-label">Как твое настроение?</label>
+            <div class="mood-selector" id="moodContainer">
+                <div class="mood-btn" data-val="1" onclick="selectMood(1)">😭<span>Ужасно</span></div>
+                <div class="mood-btn" data-val="2" onclick="selectMood(2)">😕<span>Плохо</span></div>
+                <div class="mood-btn active" data-val="3" onclick="selectMood(3)">😐<span>Норм</span></div>
+                <div class="mood-btn" data-val="4" onclick="selectMood(4)">🙂<span>Хорошо</span></div>
+                <div class="mood-btn" data-val="5" onclick="selectMood(5)">🤩<span>Отлично</span></div>
+            </div>
         </div>
 
-        <div class="proc-row">
-            <div class="proc-label">
-                ⚠️ Я сейчас прокрастинирую
+        <div class="form-group">
+            <label class="section-label">Твоя энергия / Фокус</label>
+            <div class="mood-selector" id="energyContainer">
+                <div class="energy-btn" data-val="1" onclick="selectEnergy(1)">🪫<span>Истощён</span></div>
+                <div class="energy-btn" data-val="2" onclick="selectEnergy(2)">😴<span>Устал</span></div>
+                <div class="energy-btn active" data-val="3" onclick="selectEnergy(3)">😌<span>Спокоен</span></div>
+                <div class="energy-btn" data-val="4" onclick="selectEnergy(4)">⚡<span>Активен</span></div>
+                <div class="energy-btn" data-val="5" onclick="selectEnergy(5)">🚀<span>В потоке</span></div>
             </div>
-            <label class="switch">
-                <input type="checkbox" id="procToggle">
-                <span class="slider"></span>
-            </label>
+        </div>
+
+        <div class="form-group">
+            <label class="section-label">Контекст активности</label>
+            <div class="activity-selector" id="activityContainer">
+                <div class="act-btn active" data-val="dash" onclick="selectActivity('dash')">—</div>
+                <div class="act-btn" data-val="work" onclick="selectActivity('work')">💼 Работа / Дела</div>
+                <div class="act-btn" data-val="rest" onclick="selectActivity('rest')">☕ Отдых</div>
+                <div class="act-btn" data-val="proc" onclick="selectActivity('proc')">⚠️ Прокрастинация</div>
+            </div>
         </div>
 
         <textarea id="noteInput" class="note-input" placeholder="Опиши причину (почему ты не работаешь? или почему тебе хорошо?)..."></textarea>
@@ -78,6 +93,7 @@
             <div class="report-filters">
                 <div class="mode-toggle">
                     <button class="m-btn active" onclick="report.setDisplayMode('mood')" id="mode-mood">Настроение</button>
+                    <button class="m-btn" onclick="report.setDisplayMode('energy')" id="mode-energy">Энергия</button>
                     <button class="m-btn" onclick="report.setDisplayMode('count')" id="mode-count">Кол-во</button>
                 </div>
                 <select class="custom-select" id="report-period-select" onchange="report.setPeriod(this.value)">

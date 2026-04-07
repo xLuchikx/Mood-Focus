@@ -1,7 +1,11 @@
 // Массив для хранения данных
 let journalData =[];
 let currentMood = 3; // По умолчанию "Нормально"
+let currentEnergy = 3;
+let currentActivity = 'dash';
 const emojis = { 1: '😭', 2: '😕', 3: '😐', 4: '🙂', 5: '🤩' };
+const energyEmojis = { 1: '🪫', 2: '😴', 3: '😌', 4: '⚡', 5: '🚀' };
+const activityLabels = { 'work': '💼 Работа', 'rest': '☕ Отдых', 'proc': '⚠️ Прокрастинация', 'dash': '—' };
 
 // Инициализация
 window.onload = () => {
@@ -14,7 +18,12 @@ window.onload = () => {
 // Вспомогательная функция для эмодзи
 function getEmojiForMood(val) {
     return emojis[Math.round(val)] || '➖';
-}// Выбор настроения
+}
+function getEmojiForEnergy(val) {
+    return energyEmojis[Math.round(val)] || '➖';
+}
+
+// Выбор настроения
 function selectMood(val) {
     currentMood = val;
     document.querySelectorAll('.mood-btn').forEach(btn => {
@@ -25,9 +34,28 @@ function selectMood(val) {
     });
 }
 
+function selectEnergy(val) {
+    currentEnergy = val;
+    document.querySelectorAll('.energy-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (parseInt(btn.getAttribute('data-val')) === val) {
+            btn.classList.add('active');
+        }
+    });
+}
+
+function selectActivity(val) {
+    currentActivity = val;
+    document.querySelectorAll('.act-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-val') === val) {
+            btn.classList.add('active');
+        }
+    });
+}
+
 // Сохранение записи
 function saveEntry() {
-    const isProc = document.getElementById('procToggle').checked;
     const note = document.getElementById('noteInput').value.trim();
     
     const entry = {
@@ -35,7 +63,8 @@ function saveEntry() {
         timestamp: Date.now(),
         dateStr: getLocalISODate(new Date()), // Используем локальную дату вместо UTC
         mood: currentMood,
-        procrastinating: isProc,
+        energy: currentEnergy,
+        activity: currentActivity,
         note: note
     };
 
@@ -43,9 +72,10 @@ function saveEntry() {
     localStorage.setItem('mood_journal_data', JSON.stringify(journalData));
     
     // Очистка формы
-    document.getElementById('procToggle').checked = false;
     document.getElementById('noteInput').value = '';
     selectMood(3);
+    selectEnergy(3);
+    selectActivity('dash');
 
     // Обновление UI
     renderHistory();
@@ -93,11 +123,21 @@ function renderHistoryHTML(dataList) {
                             <option value="4" ${item.mood === 4 ? 'selected' : ''}>🙂 Хорошо</option>
                             <option value="5" ${item.mood === 5 ? 'selected' : ''}>🤩 Отлично</option>
                         </select>
+                        <select class="inline-select" id="edit-energy-${item.id}">
+                            <option value="1" ${item.energy === 1 ? 'selected' : ''}>🪫 Истощён</option>
+                            <option value="2" ${item.energy === 2 ? 'selected' : ''}>😴 Устал</option>
+                            <option value="3" ${item.energy === 3 ? 'selected' : ''}>😌 Спокоен</option>
+                            <option value="4" ${item.energy === 4 ? 'selected' : ''}>⚡ Активен</option>
+                            <option value="5" ${item.energy === 5 ? 'selected' : ''}>🚀 В потоке</option>
+                        </select>
+                        <select class="inline-select" id="edit-act-${item.id}">
+                            <option value="dash" ${item.activity === 'dash' ? 'selected' : ''}>—</option>
+                            <option value="work" ${item.activity === 'work' ? 'selected' : ''}>💼 Работа</option>
+                            <option value="rest" ${item.activity === 'rest' ? 'selected' : ''}>☕ Отдых</option>
+                            <option value="proc" ${item.activity === 'proc' ? 'selected' : ''}>⚠️ Прокрастинация</option>
+                        </select>
                         <input type="date" class="inline-input" id="edit-date-${item.id}" value="${isoLocal}">
                         <input type="time" class="inline-input" id="edit-time-${item.id}" value="${timeStr}">
-                        <label style="display:flex; align-items:center; gap:5px; font-size:13px; cursor:pointer;">
-                            <input type="checkbox" id="edit-proc-${item.id}" ${item.procrastinating ? 'checked' : ''}> Прокраст.
-                        </label>
                         <input type="text" class="inline-input inline-note" id="edit-note-${item.id}" value="${item.note ? escapeHtml(item.note) : ''}" placeholder="Заметка...">
                         <button class="inline-btn" onclick="saveEdit(${item.id})">✔</button>
                         <button class="inline-btn cancel" onclick="cancelEdit()">✖</button>
@@ -108,13 +148,16 @@ function renderHistoryHTML(dataList) {
             const dateObj = new Date(item.timestamp);
             const timeStrShow = dateObj.toLocaleDateString('ru-RU') + ', ' + dateObj.toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'});
             
+            const actLabel = activityLabels[item.activity] || '';
+            const actHtml = item.activity ? `<div class="h-proc-badge act-${item.activity}">${actLabel}</div>` : '';
+
             html += `
                 <div class="history-item">
-                    <div class="h-emoji">${emojis[item.mood]}</div>
+                    <div class="h-emoji">${getEmojiForMood(item.mood)}${getEmojiForEnergy(item.energy)}</div>
                     <div class="h-content">
                         <div class="h-time">${timeStrShow}</div>
                         ${item.note ? `<p class="h-note">"${escapeHtml(item.note)}"</p>` : ''}
-                        ${item.procrastinating ? `<div class="h-proc-badge">⚠️ Прокрастинация</div>` : ''}
+                        ${actHtml}
                     </div>
                     <div class="h-actions">
                         <button class="h-edit-btn" onclick="startEdit(${item.id})" title="Редактировать">✏️</button>
@@ -153,15 +196,17 @@ function cancelEdit() {
 
 function saveEdit(id) {
     const moodEl = document.getElementById(`edit-mood-${id}`);
+    const energyEl = document.getElementById(`edit-energy-${id}`);
+    const actEl = document.getElementById(`edit-act-${id}`);
     const dateEl = document.getElementById(`edit-date-${id}`);
     const timeEl = document.getElementById(`edit-time-${id}`);
-    const procEl = document.getElementById(`edit-proc-${id}`);
     const noteEl = document.getElementById(`edit-note-${id}`);
 
-    if(!moodEl || !dateEl || !timeEl || !procEl || !noteEl) return;
+    if(!moodEl || !energyEl || !actEl || !dateEl || !timeEl || !noteEl) return;
 
     const moodVal = parseInt(moodEl.value);
-    const isProc = procEl.checked;
+    const energyVal = parseInt(energyEl.value);
+    const actVal = actEl.value;
     const noteVal = noteEl.value.trim();
     
     // Создаем дату из input[type=date] и input[type=time]
@@ -176,7 +221,8 @@ function saveEdit(id) {
             journalData[idx].timestamp = d.getTime();
             journalData[idx].dateStr = getLocalISODate(d);
             journalData[idx].mood = moodVal;
-            journalData[idx].procrastinating = isProc;
+            journalData[idx].energy = energyVal;
+            journalData[idx].activity = actVal;
             journalData[idx].note = noteVal;
         }
 
@@ -283,6 +329,8 @@ const report = {
     setDisplayMode: function(mode) {
         this.state.displayMode = mode;
         document.getElementById('mode-mood').classList.toggle('active', mode === 'mood');
+        const modeEnergyBtn = document.getElementById('mode-energy');
+        if(modeEnergyBtn) modeEnergyBtn.classList.toggle('active', mode === 'energy');
         document.getElementById('mode-count').classList.toggle('active', mode === 'count');
         this.render();
     },
@@ -346,7 +394,7 @@ const report = {
                 key = current.getHours().toString().padStart(2, '0') + ':00';
             }
             
-            dataMap[key] = { label: key, sumMood: 0, count: 0, date: new Date(current) };
+            dataMap[key] = { label: key, sumMood: 0, sumEnergy: 0, count: 0, date: new Date(current) };
             
             if (this.state.unit === 'month') current.setMonth(current.getMonth() + 1);
             else if (this.state.unit === 'day') current.setDate(current.getDate() + 1);
@@ -366,17 +414,24 @@ const report = {
 
             if (dataMap[key]) {
                 dataMap[key].sumMood += s.mood;
+                dataMap[key].sumEnergy += (s.energy || 3);
                 dataMap[key].count += 1;
             }
         });
 
         const result = Object.values(dataMap).map(d => {
+            let val = 0;
+            if (this.state.displayMode === 'mood') {
+                val = d.count > 0 ? (d.sumMood / d.count).toFixed(1) : 0;
+            } else if (this.state.displayMode === 'energy') {
+                val = d.count > 0 ? (d.sumEnergy / d.count).toFixed(1) : 0;
+            } else {
+                val = d.count;
+            }
             return {
                 label: d.label,
                 date: d.date,
-                value: this.state.displayMode === 'mood' ? 
-                       (d.count > 0 ? (d.sumMood / d.count).toFixed(1) : 0) : 
-                       d.count
+                value: val
             };
         });
         
@@ -386,7 +441,7 @@ const report = {
     renderBarChart: function(data) {
         if (data.length === 0) return '<p style="text-align:center; padding:40px; color:#666;">Нет данных</p>';
 
-        const maxVal = this.state.displayMode === 'mood' ? 5 : Math.max(...data.map(d => parseFloat(d.value)), 1);
+        const maxVal = (this.state.displayMode === 'mood' || this.state.displayMode === 'energy') ? 5 : Math.max(...data.map(d => parseFloat(d.value)), 1);
         
         const values = data.map(d => parseFloat(d.value)).filter(v => v > 0).sort((a,b) => a-b);
         let median = 0;
@@ -416,6 +471,8 @@ const report = {
                 else if(rounded === 3) barColor = 'background: var(--m3);';
                 else if(rounded === 4) barColor = 'background: var(--m4);';
                 else if(rounded === 5) barColor = 'background: var(--m5);';
+            } else if (this.state.displayMode === 'energy' && !isEmpty) {
+                barColor = 'background: var(--primary);';
             }
 
             return `
@@ -431,7 +488,7 @@ const report = {
             <div class="bar-chart">
                 ${median > 0 ? `
                     <div class="median-line" style="bottom: ${medianPos}%">
-                        <div class="median-label">мед: ${median.toFixed(this.state.displayMode === 'mood' ? 1 : 0)}</div>
+                        <div class="median-label">мед: ${median.toFixed(this.state.displayMode === 'count' ? 0 : 1)}</div>
                     </div>
                 ` : ''}
                 ${barsHtml}
@@ -447,7 +504,7 @@ const report = {
             }
             daysMap[item.dateStr].moodSum += item.mood;
             daysMap[item.dateStr].count += 1;
-            if (item.procrastinating) daysMap[item.dateStr].hasProc = true;
+            if (item.activity === 'proc') daysMap[item.dateStr].hasProc = true;
         });
 
         const today = new Date();
@@ -532,12 +589,15 @@ const report = {
 
         let totalEntries = filtered.length;
         let avgMood = 0;
-        let procCount = 0;
+        let avgEnergy = 0;
+        let workCount = 0;
 
         if (totalEntries > 0) {
-            let sum = filtered.reduce((acc, curr) => acc + curr.mood, 0);
-            avgMood = (sum / totalEntries).toFixed(1);
-            procCount = filtered.filter(x => x.procrastinating).length;
+            let sumM = filtered.reduce((acc, curr) => acc + curr.mood, 0);
+            let sumE = filtered.reduce((acc, curr) => acc + (curr.energy || 3), 0);
+            avgMood = (sumM / totalEntries).toFixed(1);
+            avgEnergy = (sumE / totalEntries).toFixed(1);
+            workCount = filtered.filter(x => x.activity === 'work').length;
         }
 
         this.renderBreadcrumbs();
@@ -547,19 +607,19 @@ const report = {
         let html = `
             <div class="report-bstats-bar">
                 <div class="bstats-card bstats-blue">
-                    <div class="bstats-icon">📝</div>
-                    <div class="bstats-value">${totalEntries}</div>
-                    <div class="bstats-label">Всего записей</div>
+                    <div class="bstats-icon">${getEmojiForEnergy(avgEnergy)}</div>
+                    <div class="bstats-value">${Number(avgEnergy) ? avgEnergy : '-'}</div>
+                    <div class="bstats-label">Ср. Энергия</div>
                 </div>
                 <div class="bstats-card bstats-green">
                     <div class="bstats-icon">${getEmojiForMood(avgMood)}</div>
                     <div class="bstats-value">${Number(avgMood) ? avgMood : '-'}</div>
-                    <div class="bstats-label">Среднее настроение</div>
+                    <div class="bstats-label">Ср. Настроение</div>
                 </div>
                 <div class="bstats-card bstats-yellow">
-                    <div class="bstats-icon">⚠️</div>
-                    <div class="bstats-value">${procCount}</div>
-                    <div class="bstats-label">Раз прокрастинировал(а)</div>
+                    <div class="bstats-icon">💼</div>
+                    <div class="bstats-value">${workCount}</div>
+                    <div class="bstats-label">Рабочих записей</div>
                 </div>
             </div>
 
@@ -833,16 +893,61 @@ function applyNotificationTimer() {
         showToast(`Таймер запущен: каждые ${notifSettings.intervalMin} мин.`);
         notifIntervalId = setInterval(() => {
             if (Notification.permission === "granted") {
-                const n = new Notification("Минутка рефлексии 🧠", {
-                    body: "Отвлекись на секунду. Как твое настроение? Чем сейчас занят?",
-                    icon: "icon.svg",
-                    requireInteraction: true
-                });
-                n.onclick = () => {
-                    window.focus();
-                    n.close();
-                };
+                // Если есть SW — отправляем через него (поддерживает actions/кнопки)
+                if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({ type: 'SHOW_NOTIFICATION' });
+                } else {
+                    // Fallback: обычное уведомление
+                    const n = new Notification("Минутка рефлексии 🧠", {
+                        body: "Как твоё настроение прямо сейчас?",
+                        icon: "icon.svg",
+                        requireInteraction: true
+                    });
+                    n.onclick = () => { window.focus(); n.close(); };
+                }
             }
         }, ms);
     }
+}
+
+function testNotification() {
+    if (Notification.permission !== "granted") {
+        Notification.requestPermission().then(perm => {
+            if (perm === "granted") triggerSWNotif();
+            else alert("Пожалуйста, разрешите уведомления в браузере.");
+        });
+    } else {
+        triggerSWNotif();
+    }
+}
+
+function triggerSWNotif() {
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: 'SHOW_NOTIFICATION' });
+    } else {
+        showToast("Service Worker не активен. Обновите страницу (F5) или проверьте HTTPS.");
+    }
+}
+
+// Обработчик быстрой записи настроения из уведомления (SW postMessage)
+if (navigator.serviceWorker) {
+    navigator.serviceWorker.addEventListener('message', e => {
+        if (e.data && e.data.type === 'QUICK_MOOD') {
+            const moodVal = e.data.mood;
+            if (!moodVal) return;
+            const entry = {
+                id: Date.now(),
+                timestamp: Date.now(),
+                dateStr: getLocalISODate(new Date()),
+                mood: moodVal,
+                energy: 3,
+                activity: 'dash',
+                note: ''
+            };
+            journalData.push(entry);
+            localStorage.setItem('mood_journal_data', JSON.stringify(journalData));
+            renderHistory();
+            showToast(`Записано: ${emojis[moodVal]} (из уведомления)`);
+        }
+    });
 }
