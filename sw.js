@@ -56,14 +56,16 @@ self.addEventListener('notificationclick', e => {
 
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
-      const focusedClient = clientList.find(c => c.focused) || clientList[0];
+      // Ищем уже открытое окно нашего приложения
+      let focusedClient = clientList.find(c => c.focused) || clientList[0];
+      
       if (focusedClient) {
-        if (moodVal) {
-          focusedClient.postMessage({ type: 'QUICK_MOOD', mood: moodVal });
-        }
+        // Если окно есть, фокусируемся на нем и шлем команду открыть PiP
+        focusedClient.postMessage({ type: 'OPEN_PIP' });
         return focusedClient.focus();
       } else {
-        return clients.openWindow('./' + (moodVal ? '?quickmood=' + moodVal : ''));
+        // Если окна нет, открываем его с параметром авто-открытия PiP
+        return clients.openWindow('./?openpip=true');
       }
     })
   );

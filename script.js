@@ -923,15 +923,42 @@ function testNotification() {
 
 function triggerSWNotif() {
     if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+        // Упрощенное уведомление, которое просто просит кликнуть для ввода
         navigator.serviceWorker.controller.postMessage({ type: 'SHOW_NOTIFICATION' });
     } else {
-        showToast("Service Worker не активен. Обновите страницу (F5) или проверьте HTTPS.");
+        showToast("Service Worker не активен. Обновите страницу (F5).");
     }
 }
 
-// Обработчик быстрой записи настроения из уведомления (SW postMessage)
+// Глобальная функция для сохранения данных из PiP-виджета
+window.saveQuickEntry = function(data) {
+    const entry = {
+        id: Date.now(),
+        timestamp: Date.now(),
+        dateStr: getLocalISODate(new Date()),
+        mood: parseInt(data.mood),
+        energy: parseInt(data.energy),
+        activity: data.activity,
+        note: data.note || ""
+    };
+    
+    journalData.push(entry);
+    localStorage.setItem('mood_journal_data', JSON.stringify(journalData));
+    renderHistory();
+    showToast(`Записано через виджет: ${emojis[entry.mood]} ✨`);
+    
+    // Сбрасываем таймер после успешного ввода
+    applyNotificationTimer();
+};
+
+// Обработчик команд от Service Worker (например, при клике на уведомление)
 if (navigator.serviceWorker) {
     navigator.serviceWorker.addEventListener('message', e => {
+        if (e.data && e.data.type === 'OPEN_PIP') {
+            if (typeof openQuickInputPiP === 'function') {
+                openQuickInputPiP();
+            }
+        }
         if (e.data && e.data.type === 'QUICK_MOOD') {
             const moodVal = e.data.mood;
             if (!moodVal) return;
@@ -951,3 +978,13 @@ if (navigator.serviceWorker) {
         }
     });
 }
+
+// Авто-открытие PiP при загрузке, если перешли по ссылке из уведомления
+window.addEventListener('load', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('openpip') === 'true') {
+        setTimeout(() => {
+            if (typeof openQuickInputPiP === 'function') openQuickInputPiP();
+        }, 800);
+    }
+});
