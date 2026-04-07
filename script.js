@@ -921,12 +921,26 @@ function testNotification() {
     }
 }
 
-function triggerSWNotif() {
-    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-        // Упрощенное уведомление, которое просто просит кликнуть для ввода
+async function triggerSWNotif() {
+    if (!navigator.serviceWorker) {
+        showToast("Браузер не поддерживает Service Worker.");
+        return;
+    }
+
+    const reg = await navigator.serviceWorker.ready;
+    
+    if (navigator.serviceWorker.controller) {
+        // Если контроллер активен, шлем сообщение (для интерактивной цепочки)
         navigator.serviceWorker.controller.postMessage({ type: 'SHOW_NOTIFICATION' });
     } else {
-        showToast("Service Worker не активен. Обновите страницу (F5).");
+        // Если контроллер еще не "захватил" страницу, вызываем уведомление через регистрацию напрямую
+        reg.showNotification('Минутка рефлексии 🧠', {
+            body: 'Как твоё настроение прямо сейчас?',
+            icon: 'icon.svg',
+            requireInteraction: true,
+            tag: 'mood-check'
+        });
+        showToast("Уведомление вызвано напрямую. Обновите (F5) для работы виджета.");
     }
 }
 
