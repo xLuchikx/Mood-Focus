@@ -1,11 +1,12 @@
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open('mood-journal-v1').then(cache => {
+    caches.open('mood-journal-v2').then(cache => {
       return cache.addAll([
         './',
         './index.html',
         './styles.css',
         './script.js',
+        './pip-widget.js',
         './icon.svg',
         './manifest.json'
       ]);
@@ -31,17 +32,10 @@ self.addEventListener('message', e => {
   if (e.data && e.data.type === 'SHOW_NOTIFICATION') {
     e.waitUntil(
       self.registration.showNotification('Минутка рефлексии 🧠', {
-        body: 'Как твоё настроение прямо сейчас?',
+        body: 'Нажмите сюда, чтобы записать состояние',
         icon: './icon.svg',
         requireInteraction: true,
-        tag: 'mood-check',
-        actions: [
-          { action: 'mood_1', title: '😭 Ужасно' },
-          { action: 'mood_2', title: '😕 Плохо' },
-          { action: 'mood_3', title: '😐 Норм' },
-          { action: 'mood_4', title: '🙂 Хорошо' },
-          { action: 'mood_5', title: '🤩 Отлично' }
-        ]
+        tag: 'mood-check-single'
       })
     );
   }
