@@ -929,18 +929,19 @@ async function triggerSWNotif() {
 
     const reg = await navigator.serviceWorker.ready;
     
-    if (navigator.serviceWorker.controller) {
-        // Если контроллер активен, шлем сообщение (для интерактивной цепочки)
-        navigator.serviceWorker.controller.postMessage({ type: 'SHOW_NOTIFICATION' });
+    if (reg.active) {
+        // Шлем сообщение активному воркеру напрямую (надежнее контроллера)
+        reg.active.postMessage({ type: 'SHOW_NOTIFICATION' });
+        showToast("Уведомление отправлено... Ожидайте.");
     } else {
-        // Если контроллер еще не "захватил" страницу, вызываем уведомление через регистрацию напрямую
+        // Fallback если воркер совсем не активен
         reg.showNotification('Минутка рефлексии 🧠', {
             body: 'Как твоё настроение прямо сейчас?',
             icon: 'icon.svg',
             requireInteraction: true,
             tag: 'mood-check'
         });
-        showToast("Уведомление вызвано напрямую. Обновите (F5) для работы виджета.");
+        showToast("Вызвано через систему (SW не активен).");
     }
 }
 
