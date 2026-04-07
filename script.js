@@ -4,7 +4,7 @@ let currentMood = 3; // По умолчанию "Нормально"
 let currentEnergy = 3;
 let currentActivity = 'dash';
 const emojis = { 1: '😭', 2: '😕', 3: '😐', 4: '🙂', 5: '🤩' };
-const energyEmojis = { 1: '🪫', 2: '😴', 3: '😌', 4: '⚡', 5: '🚀' };
+const energyEmojis = { 1: '🥀', 2: '😴', 3: '😌', 4: '⚡', 5: '🚀' };
 const activityLabels = { 'work': '💼 Работа', 'rest': '☕ Отдых', 'proc': '⚠️ Прокрастинация', 'dash': '—' };
 
 // Инициализация
